@@ -1,0 +1,9 @@
+<h1>Available Cryptocurrencies</h1>
+
+<ul>
+    {% for s in symbols %}
+        <li><a href="/data/{{ s }}/">{{ s }}</a></li>
+    {% endfor %}
+</ul>
+
+<p><a href="/">Back Home</a></p>

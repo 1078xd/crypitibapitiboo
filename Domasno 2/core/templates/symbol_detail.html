@@ -1,0 +1,28 @@
+<h1>{{ symbol }} — Historical Prices</h1>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<canvas id="chart"></canvas>
+
+{{ dates|json_script:"dates-data" }}
+{{ closes|json_script:"closes-data" }}
+
+<script>
+const labels = JSON.parse(document.getElementById("dates-data").textContent);
+const data = JSON.parse(document.getElementById("closes-data").textContent);
+
+new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "{{ symbol }} Closing Price",
+            data: data,
+            borderWidth: 1
+        }]
+    }
+});
+</script>
+
+<p><a href="/data/">Back</a></p>
+<p><a href="/">Home</a></p>

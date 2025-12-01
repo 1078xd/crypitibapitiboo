@@ -1,0 +1,12 @@
+<h1>Run Pipeline</h1>
+
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit">Run Pipeline</button>
+</form>
+
+{% if message %}
+<p><strong>{{ message }}</strong></p>
+{% endif %}
+
+<p><a href="/">Back Home</a></p>
