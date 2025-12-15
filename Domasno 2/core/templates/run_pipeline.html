@@ -1,12 +1,22 @@
-<h1>Run Pipeline</h1>
+{% extends "base.html" %}
+{% block title %}Fetch Data{% endblock %}
+{% block body_class %}analyze-bg{% endblock %}
 
-<form method="POST">
-    {% csrf_token %}
-    <button type="submit">Run Pipeline</button>
-</form>
+{% block content %}
+<section class="market-section">
+  <div class="market-card" style="max-width:520px; text-align:center; padding:50px 30px;">
 
-{% if message %}
-<p><strong>{{ message }}</strong></p>
-{% endif %}
+    <h2 style="margin-bottom:18px;">Fetch Data</h2>
 
-<p><a href="/">Back Home</a></p>
+    <form method="POST">
+      {% csrf_token %}
+      <button type="submit" class="btn-primary">Here</button>
+    </form>
+
+    {% if message %}
+      <p style="margin-top:18px; opacity:0.9;">{{ message }}</p>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

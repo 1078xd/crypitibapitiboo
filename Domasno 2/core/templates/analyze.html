@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block body_class %}analyze-bg{% endblock %}
+
+{% block content %}
+<section class="market-section">
+  <div class="market-card">
+
+    <div class="market-header">
+      <div>#</div>
+      <div>Coin</div>
+      <div>Daily</div>
+      <div>Weekly</div>
+      <div>Monthly</div>
+    </div>
+
+    {% for r in page_obj %}
+<div class="market-row">
+  <div>{{ forloop.counter0|add:page_obj.start_index }}</div>
+
+  <div>
+    <a href="{% url 'symbol_detail' r.symbol %}"
+       style="color:white; text-decoration:none; font-weight:600;">
+      {{ r.symbol }}
+    </a>
+  </div>
+
+  <div class="signal {{ r.daily_signal|lower }}">
+    {{ r.daily_signal }}
+  </div>
+
+  <div class="signal {{ r.weekly_signal|lower }}">
+    {{ r.weekly_signal }}
+  </div>
+
+  <div class="signal {{ r.monthly_signal|lower }}">
+    {{ r.monthly_signal }}
+  </div>
+</div>
+{% endfor %}
+
+
+    <!-- PAGINATION -->
+    <div style="margin-top:20px; text-align:center;">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" style="color:white;">Previous</a>
+      {% endif %}
+
+      <span style="margin:0 12px;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" style="color:white;">Next</a>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

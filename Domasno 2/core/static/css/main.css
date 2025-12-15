@@ -1,0 +1,251 @@
+/* =========================
+   GLOBAL RESET
+========================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: "Georgia", serif;
+    color: white;
+}
+
+/* =========================
+   ANALYZE PAGE BACKGROUND
+   (applies ONLY if body has class="analyze-bg")
+========================= */
+body.analyze-bg {
+    background-image: url("../images/background2.jpg");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+/* =========================
+   NAVBAR
+========================= */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 72px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0 60px;
+
+    background: rgba(15, 20, 60, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    z-index: 1000;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo img {
+    height: 42px;
+}
+
+.brand {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: white;
+    font-size: 16px;
+}
+
+/* =========================
+   DROPDOWN
+========================= */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+
+    background: rgba(15, 20, 60, 0.85);
+    backdrop-filter: blur(12px);
+
+    list-style: none;
+    padding: 10px 10px;
+    min-width: 100px;
+
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+/* =========================
+   SEARCH
+========================= */
+.nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 10px;
+}
+
+.search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 5px;
+    width: 150px;
+}
+
+.search-box button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* =========================
+   HERO (HOME PAGE ONLY)
+========================= */
+.hero {
+    height: 100vh;
+    background: url("../images/background.jpg") no-repeat center center / cover;
+    display: flex;
+    align-items: center;
+    padding-left: 80px;
+    position: relative;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.hero-content {
+    position: relative;
+    max-width: 600px;
+}
+
+.hero-content h1 {
+    font-size: 52px;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero-content p {
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+/* =========================
+   MARKET TABLE (ANALYZE)
+========================= */
+.market-section {
+    padding: 160px 60px;
+}
+
+.market-card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(14px);
+    border-radius: 18px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.market-header,
+.market-row {
+    display: grid;
+    grid-template-columns:
+        50px
+        160px
+        120px
+        80px
+        80px
+        80px
+        100px
+        180px;
+    align-items: center;
+}
+
+.market-header {
+    font-weight: 600;
+    opacity: 0.85;
+    padding: 16px;
+}
+
+.market-row {
+    padding: 18px 16px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+}
+
+/* =========================
+   SIGNALS & COLORS
+========================= */
+.pos { color: #4cd964; }
+.neg { color: #ff3b30; }
+
+.signal {
+    font-weight: 700;
+    text-align: center;
+}
+
+.signal.buy  { color: #4cd964; }
+.signal.sell { color: #ff3b30; }
+.signal.hold { color: #f0ad4e; }
+
+/* =========================
+   BUTTONS
+========================= */
+.btn-primary {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.btn-primary:hover {
+    background: rgba(255,255,255,0.26);
+}

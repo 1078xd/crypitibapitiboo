@@ -1,6 +1,15 @@
-<h1>Crypitibapitiboo </h1>
+{% extends "base.html" %}
 
-<ul>
-    <li><a href="/run-pipeline/">Fetch the latest data</a></li>
-    <li><a href="/data/">Browse Stored Crypto Data</a></li>
-</ul>
+{% block title %}Home | Crypitibapitiboo{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Turning Data into Knowledge<br>- Like Magic</h1>
+        <p>
+            Crypitibapitiboo is a web-based system designed to collect,
+            clean, and analyze cryptocurrency market data.
+        </p>
+    </div>
+</section>
+{% endblock %}

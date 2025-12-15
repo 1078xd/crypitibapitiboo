@@ -1,9 +1,20 @@
-<h1>Available Cryptocurrencies</h1>
+<div class="market-card">
 
-<ul>
-    {% for s in symbols %}
-        <li><a href="/data/{{ s }}/">{{ s }}</a></li>
-    {% endfor %}
-</ul>
+  <div class="market-header">
+    <div>Coin</div>
+    <div>Price</div>
+    <div>Signal</div>
+  </div>
 
-<p><a href="/">Back Home</a></p>
+  {% for r in rows %}
+  <div class="market-row">
+    <div>{{ r.symbol }}</div>
+    <div>${{ r.price|floatformat:4 }}</div>
+
+    <div class="signal {{ r.signal|lower }}">
+      {{ r.signal }}
+    </div>
+  </div>
+  {% endfor %}
+
+</div>

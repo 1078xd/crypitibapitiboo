@@ -1,28 +1,116 @@
-<h1>{{ symbol }} — Historical Prices</h1>
+{% extends "base.html" %}
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block title %}{{ symbol }} | Crypitibapitiboo{% endblock %}
+{% block body_class %}analyze-bg{% endblock %}
 
-<canvas id="chart"></canvas>
+{% block content %}
+<section class="market-section">
+  <div class="market-card">
 
-{{ dates|json_script:"dates-data" }}
-{{ closes|json_script:"closes-data" }}
+    <h1>{{ symbol }}</h1>
 
-<script>
-const labels = JSON.parse(document.getElementById("dates-data").textContent);
-const data = JSON.parse(document.getElementById("closes-data").textContent);
+    <p>
+      Latest signal: <strong>{{ latest_signal }}</strong>
+    </p>
 
-new Chart(document.getElementById("chart"), {
-    type: "line",
-    data: {
-        labels: labels,
-        datasets: [{
-            label: "{{ symbol }} Closing Price",
-            data: data,
-            borderWidth: 1
-        }]
-    }
-});
-</script>
+    <p>
+      Timeframe:
+      <a href="?tf=daily">Daily</a> |
+      <a href="?tf=weekly">Weekly</a> |
+      <a href="?tf=monthly">Monthly</a>
+    </p>
 
-<p><a href="/data/">Back</a></p>
-<p><a href="/">Home</a></p>
+    {% if has_enough_data %}
+      <p style="opacity:0.7;">
+        Showing last {{ rows|length }} {{ timeframe }} candles
+      </p>
+
+      <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+      </div>
+
+      {{ rows|json_script:"price-data" }}
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+
+      <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const raw = JSON.parse(
+            document.getElementById("price-data").textContent
+          );
+
+          const points = raw.map(r => ({
+            x: r.ts,
+            y: Number(r.close)
+          }));
+
+          if (!points.length) return;
+
+          const ctx = document.getElementById("priceChart");
+
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              datasets: [{
+                label: "Close Price",
+                data: points,
+                parsing: false,
+                borderColor: "#ff5252",
+                backgroundColor: "rgba(255,82,82,0.25)",
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit:
+                      "{{ timeframe }}" === "daily"
+                        ? "day"
+                        : "{{ timeframe }}" === "weekly"
+                          ? "week"
+                          : "month"
+                  },
+                  grid: { display: false },
+                  ticks: { color: "#fff" }
+                },
+                y: {
+                  beginAtZero: false,
+                  grace: "10%",
+                  ticks: { color: "#fff" },
+                  grid: { color: "rgba(255,255,255,0.1)" }
+                }
+              },
+
+              plugins: {
+                legend: {
+                  labels: { color: "#fff" }
+                }
+              }
+            }
+          });
+        });
+      </script>
+
+    {% else %}
+      <p>Not enough data to display a {{ timeframe }} chart.</p>
+    {% endif %}
+
+  </div>
+</section>
+
+<style>
+.chart-container {
+  width: 100%;
+  height: 420px;
+}
+</style>
+{% endblock %}

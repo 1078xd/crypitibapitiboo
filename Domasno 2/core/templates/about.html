@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block body_class %}analyze-bg{% endblock %}
+
+{% block content %}
+<section class="market-section">
+  <div class="market-card">
+
+    <h1 style="margin-bottom: 20px;">About Crypitibapitiboo</h1>
+
+    <p style="line-height: 1.7; opacity: 0.9; margin-bottom: 18px;">
+      <strong>Crypitibapitiboo</strong> is a web-based system designed to collect,
+      process, and analyze historical cryptocurrency market data.
+      The goal of the project is to transform raw exchange data into
+      meaningful insights through structured pipelines and technical analysis.
+    </p>
+
+    <p style="line-height: 1.7; opacity: 0.9; margin-bottom: 18px;">
+      The application is built entirely in <strong>Python</strong>, chosen for its
+      strong ecosystem of data-processing libraries and excellent support for
+      API interaction and automation. Market data is collected and stored in
+      a structured format that can be easily extended to relational databases
+      such as PostgreSQL.
+    </p>
+
+    <h2 style="margin: 30px 0 12px;">Why Binance?</h2>
+
+    <p style="line-height: 1.7; opacity: 0.9; margin-bottom: 18px;">
+      Multiple data sources were evaluated during development, including
+      blockchain-level data, web scraping, decentralized exchanges, and
+      public market-data aggregators. Each option had significant limitations
+      such as complexity, instability, limited historical depth, or restrictive
+      pricing models.
+    </p>
+
+    <p style="line-height: 1.7; opacity: 0.9; margin-bottom: 18px;">
+      After careful evaluation, the <strong>Binance public API</strong> was selected
+      as the primary data source. Binance provides stable, well-documented
+      endpoints, long historical OHLCV data, and supports hundreds of actively
+      traded USDT pairs — all without requiring authentication.
+    </p>
+
+    <h2 style="margin: 30px 0 12px;">Architecture & Data Pipeline</h2>
+
+    <p style="line-height: 1.7; opacity: 0.9; margin-bottom: 18px;">
+      Crypitibapitiboo follows a <strong>Pipe-and-Filter architecture</strong>.
+      Instead of a monolithic process, the system is divided into independent
+      filters, each responsible for a single task:
+    </p>
+
+    <ul style="margin-left: 20px; line-height: 1.7; opacity: 0.9;">
+      <li>Discovering available trading pairs</li>
+      <li>Defining historical time ranges</li>
+      <li>Parallel data extraction using multithreading</li>
+      <li>Cleaning and formatting OHLCV records</li>
+      <li>Storing results in a unified dataset</li>
+    </ul>
+
+    <h2 style="margin: 30px 0 12px;">What This Project Delivers</h2>
+
+    <p style="line-height: 1.7; opacity: 0.9;">
+      The result is an automated, scalable platform capable of producing
+      up-to-date cryptocurrency datasets and performing multi-timeframe
+      technical analysis. Beyond the data itself, the project demonstrates
+      practical experience with data engineering patterns, API-driven systems,
+      and the foundations of quantitative market analysis.
+    </p>
+
+  </div>
+</section>
+{% endblock %}
