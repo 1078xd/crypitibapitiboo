@@ -10,7 +10,8 @@
     <h1>{{ symbol }}</h1>
 
     <p>
-      Latest signal: <strong>{{ latest_signal }}</strong>
+      Overall signal:
+      <strong class="signal {{ overall_signal|lower }}">{{ overall_signal }}</strong>
     </p>
 
     <p>
@@ -21,96 +22,83 @@
     </p>
 
     {% if has_enough_data %}
+
       <p style="opacity:0.7;">
-        Showing last {{ rows|length }} {{ timeframe }} candles
+        Using {{ actual_candles }} candles (min required: {{ min_required }})
       </p>
 
-      <div class="chart-container">
-        <canvas id="priceChart"></canvas>
+      <hr style="opacity:0.2; margin:16px 0;">
+
+      <h3>Latest candle</h3>
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; opacity:0.95;">
+        <div>Date: <strong>{{ latest.date }}</strong></div>
+        <div>Close: <strong>{{ latest.close }}</strong></div>
+        <div>Open: <strong>{{ latest.open }}</strong></div>
+        <div>High: <strong>{{ latest.high }}</strong></div>
+        <div>Low: <strong>{{ latest.low }}</strong></div>
+        <div>Volume: <strong>{{ latest.volume }}</strong></div>
       </div>
 
-      {{ rows|json_script:"price-data" }}
+      <hr style="opacity:0.2; margin:16px 0;">
 
-      <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+      <h3>Technical Indicators</h3>
 
-      <script>
-        document.addEventListener("DOMContentLoaded", () => {
-          const raw = JSON.parse(
-            document.getElementById("price-data").textContent
-          );
+      <div class="market-header" style="grid-template-columns: 1.9fr 1.2fr 0.9fr;">
+        <div>Indicator</div>
+        <div>Value</div>
+        <div>Signal</div>
+      </div>
 
-          const points = raw.map(r => ({
-            x: r.ts,
-            y: Number(r.close)
-          }));
+      {% for name, sig in signals.items %}
+        <div class="market-row" style="grid-template-columns: 1.9fr 1.2fr 0.9fr; align-items:center;">
+          <div style="font-weight:600;">{{ name }}</div>
 
-          if (!points.length) return;
+          <div style="opacity:0.9;">
+            {% if name == "RSI (14)" %}
+              {{ values.rsi|floatformat:2 }}
+            {% elif name == "MACD" %}
+              {{ values.macd|floatformat:6 }}
+              <span style="opacity:0.75;">(sig {{ values.macd_signal|floatformat:6 }})</span>
+            {% elif name == "Stochastic Oscillator" %}
+              K={{ values.stoch_k|floatformat:2 }},
+              D={{ values.stoch_d|floatformat:2 }}
+            {% elif name == "ADX (14)" %}
+              {{ values.adx|floatformat:2 }}
+            {% elif name == "CCI (20)" %}
+              {{ values.cci|floatformat:2 }}
+            {% elif name == "SMA (20)" %}
+              {{ values.sma_20|floatformat:6 }}
+            {% elif name == "EMA (20)" %}
+              {{ values.ema_20|floatformat:6 }}
+            {% elif name == "WMA (20)" %}
+              {{ values.wma_20|floatformat:6 }}
+            {% elif name == "Bollinger Bands" %}
+              L={{ values.bb_lower|floatformat:6 }},
+              U={{ values.bb_upper|floatformat:6 }}
+            {% elif name == "Volume SMA (20)" %}
+              {{ values.vol_sma_20|floatformat:2 }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
 
-          const ctx = document.getElementById("priceChart");
+          <div class="signal {{ sig|lower }}">
+            {{ sig }}
+          </div>
+        </div>
+      {% endfor %}
 
-          new Chart(ctx, {
-            type: "line",
-            data: {
-              datasets: [{
-                label: "Close Price",
-                data: points,
-                parsing: false,
-                borderColor: "#ff5252",
-                backgroundColor: "rgba(255,82,82,0.25)",
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.2
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,
-
-              scales: {
-                x: {
-                  type: "time",
-                  time: {
-                    unit:
-                      "{{ timeframe }}" === "daily"
-                        ? "day"
-                        : "{{ timeframe }}" === "weekly"
-                          ? "week"
-                          : "month"
-                  },
-                  grid: { display: false },
-                  ticks: { color: "#fff" }
-                },
-                y: {
-                  beginAtZero: false,
-                  grace: "10%",
-                  ticks: { color: "#fff" },
-                  grid: { color: "rgba(255,255,255,0.1)" }
-                }
-              },
-
-              plugins: {
-                legend: {
-                  labels: { color: "#fff" }
-                }
-              }
-            }
-          });
-        });
-      </script>
+      <p style="margin-top:12px; opacity:0.7;">
+        ADX signal uses trend strength (ADX ≥ 20) + direction (Close vs SMA20).
+      </p>
 
     {% else %}
-      <p>Not enough data to display a {{ timeframe }} chart.</p>
+      <p>Not enough data to display {{ timeframe }} indicators.</p>
+      <p style="opacity:0.7;">
+        Need at least {{ min_required }} candles, you have {{ actual_candles }}.
+      </p>
     {% endif %}
 
   </div>
 </section>
-
-<style>
-.chart-container {
-  width: 100%;
-  height: 420px;
-}
-</style>
 {% endblock %}

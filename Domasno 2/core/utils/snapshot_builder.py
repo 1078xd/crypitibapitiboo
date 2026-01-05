@@ -4,33 +4,32 @@ import pandas as pd
 from core.models import CryptoOHLCV, MarketSnapshot
 from core.utils.queryset_to_df import queryset_to_df
 from core.utils.timeframes import resample_timeframe
-from core.indicators.indicators import compute_indicators, generate_signals
+from core.indicators.indicators import compute_indicators, build_signals_snapshot
 from core.constants import MIN_CANDLES, SIGNAL_NA
 
 
 def compute_signal_for_timeframe(df: pd.DataFrame, timeframe: str) -> str:
+    """
+    Returns overall BUY/SELL/HOLD/N/A for a given timeframe using the
+    10-indicator majority vote from build_signals_snapshot().
+    """
     # Resample if needed
     if timeframe != "daily":
-        df = resample_timeframe(df, timeframe)
+        df_tf = resample_timeframe(df.copy(), timeframe)
     else:
-        df = df.copy()
+        df_tf = df.copy()
 
-    # Hard length check
-    min_required = MIN_CANDLES.get(timeframe, 120)
-    if len(df) < min_required:
+    # Hard length check (before indicators)
+    min_required = MIN_CANDLES.get(timeframe, MIN_CANDLES["daily"])
+    if len(df_tf) < min_required:
         return SIGNAL_NA
 
     try:
-        df = compute_indicators(df)
-        df = generate_signals(df)
+        df_tf = compute_indicators(df_tf)
+        snap = build_signals_snapshot(df_tf)
+        return snap.get("overall", SIGNAL_NA) or SIGNAL_NA
     except Exception:
         return SIGNAL_NA
-
-    if "signal" not in df.columns:
-        return SIGNAL_NA
-
-    last_signal = df.iloc[-1]["signal"]
-    return last_signal if isinstance(last_signal, str) else SIGNAL_NA
 
 
 @transaction.atomic
@@ -59,11 +58,7 @@ def rebuild_market_snapshots():
 
         latest = df.iloc[-1]
         price = latest.get("close")
-
-        # If you store daily candles, "24h volume" isn't df.tail(24) (that's 24 days).
-        # For integrity, we store "recent volume" as last daily candle volume.
-        # If you truly want 24h volume, fetch hourly candles from Binance pipeline.
-        volume_24h = latest.get("volume")
+        volume_24h = latest.get("volume")  # last candle volume (daily)
 
         daily_signal = compute_signal_for_timeframe(df, "daily")
         weekly_signal = compute_signal_for_timeframe(df, "weekly")

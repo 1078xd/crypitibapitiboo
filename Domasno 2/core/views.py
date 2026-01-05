@@ -9,9 +9,16 @@ from django.core.paginator import Paginator
 from core.models import CryptoOHLCV, MarketSnapshot
 from core.utils.queryset_to_df import queryset_to_df
 from core.utils.timeframes import resample_timeframe
-from core.indicators.indicators import compute_indicators, generate_signals
+from core.indicators.indicators import compute_indicators, build_signals_snapshot
 from core.utils.snapshot_builder import rebuild_market_snapshots
-from core.constants import MIN_CANDLES, ALLOWED_TIMEFRAMES, SIGNAL_NA
+from core.constants import (
+    MIN_CANDLES,
+    ALLOWED_TIMEFRAMES,
+    SIGNAL_NA,
+    SIGNAL_BUY,
+    SIGNAL_SELL,
+    SIGNAL_HOLD,
+)
 
 from app.pipes.pipe_binance import run_pipe_binance
 
@@ -24,6 +31,28 @@ DATA_FILE = os.path.join(
     "data",
     "cryptocurrency_binance_all.csv"
 )
+
+
+def majority_vote_3(daily: str, weekly: str, monthly: str) -> str:
+    """
+    Combine daily/weekly/monthly signals into one by majority vote.
+    Ignores N/A values. If tie, returns HOLD.
+    """
+    vals = [daily, weekly, monthly]
+    valid = [v for v in vals if v in (SIGNAL_BUY, SIGNAL_SELL, SIGNAL_HOLD)]
+
+    if not valid:
+        return SIGNAL_NA
+
+    b = valid.count(SIGNAL_BUY)
+    s = valid.count(SIGNAL_SELL)
+    h = valid.count(SIGNAL_HOLD)
+
+    if b > s and b > h:
+        return SIGNAL_BUY
+    if s > b and s > h:
+        return SIGNAL_SELL
+    return SIGNAL_HOLD
 
 
 def home(request):
@@ -54,14 +83,57 @@ def run_pipeline(request):
 
     return render(request, "run_pipeline.html", {"message": message})
 
-
 def analyze(request):
-    snapshots = MarketSnapshot.objects.order_by("symbol")
+    """
+    Analyze list page with:
+    - sorting (A–Z / Z–A)
+    - signal filtering (BUY / HOLD / SELL)
+    - search by symbol
+    """
+    sort = request.GET.get("sort", "asc")              # asc | desc
+    signal_filter = request.GET.get("signal", "all")   # buy | sell | hold | all
+    search = request.GET.get("search", "").strip()     # text search
+
+    snapshots = list(MarketSnapshot.objects.all())
+
+    # Attach combined signal (daily + weekly + monthly)
+    for r in snapshots:
+        r.combined_signal = majority_vote_3(
+            r.daily_signal, r.weekly_signal, r.monthly_signal
+        )
+
+    # SEARCH (symbol contains text)
+    if search:
+        snapshots = [
+            r for r in snapshots
+            if search.lower() in r.symbol.lower()
+        ]
+
+    # FILTER by signal
+    if signal_filter in ("buy", "sell", "hold"):
+        snapshots = [
+            r for r in snapshots
+            if r.combined_signal.lower() == signal_filter
+        ]
+
+    # SORT by symbol
+    snapshots.sort(
+        key=lambda x: x.symbol,
+        reverse=(sort == "desc")
+    )
+
     paginator = Paginator(snapshots, 50)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "analyze.html", {"page_obj": page_obj})
+    context = {
+        "page_obj": page_obj,
+        "sort": sort,
+        "signal_filter": signal_filter,
+        "search": search,
+    }
+
+    return render(request, "analyze.html", context)
 
 
 def data_overview(request):
@@ -76,9 +148,7 @@ def data_overview(request):
             if sym and sym.endswith("USDT"):
                 symbols.add(sym.strip())
 
-    return render(request, "data_overview.html", {
-        "symbols": sorted(symbols)
-    })
+    return render(request, "data_overview.html", {"symbols": sorted(symbols)})
 
 
 def symbol_detail(request, symbol):
@@ -89,16 +159,21 @@ def symbol_detail(request, symbol):
     qs = CryptoOHLCV.objects.filter(symbol=symbol).order_by("date")
     df = queryset_to_df(qs)
 
+    # Default context so template never crashes
+    base_ctx = {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "overall_signal": SIGNAL_NA,
+        "latest": {},
+        "signals": {},
+        "values": {},
+        "has_enough_data": False,
+        "min_required": MIN_CANDLES[timeframe],
+        "actual_candles": 0,
+    }
+
     if df.empty:
-        return render(request, "symbol_detail.html", {
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "latest_signal": SIGNAL_NA,
-            "rows": [],
-            "has_enough_data": False,
-            "min_required": MIN_CANDLES[timeframe],
-            "actual_candles": 0,
-        })
+        return render(request, "symbol_detail.html", base_ctx)
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"])
@@ -109,32 +184,22 @@ def symbol_detail(request, symbol):
 
     min_required = MIN_CANDLES[timeframe]
     if len(df) < min_required:
-        return render(request, "symbol_detail.html", {
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "latest_signal": SIGNAL_NA,
-            "rows": [],
-            "has_enough_data": False,
-            "min_required": min_required,
-            "actual_candles": len(df),
-        })
+        base_ctx["min_required"] = min_required
+        base_ctx["actual_candles"] = len(df)
+        return render(request, "symbol_detail.html", base_ctx)
 
     df = compute_indicators(df)
-    df = generate_signals(df)
+    snapshot = build_signals_snapshot(df)
 
-    df = df.tail(500)
-
-    df["ts"] = df["date"].astype("int64") // 10**6
-
-    rows = df[["ts", "close"]].to_dict("records")
-    latest_signal = df.iloc[-1].get("signal", SIGNAL_NA)
-
-    return render(request, "symbol_detail.html", {
-        "symbol": symbol,
-        "timeframe": timeframe,
-        "latest_signal": latest_signal,
-        "rows": rows,
+    ctx = {
+        **base_ctx,
         "has_enough_data": True,
         "min_required": min_required,
         "actual_candles": len(df),
-    })
+        "overall_signal": snapshot["overall"],
+        "latest": snapshot["latest"],
+        "signals": snapshot["signals"],
+        "values": snapshot["values"],
+    }
+
+    return render(request, "symbol_detail.html", ctx)
