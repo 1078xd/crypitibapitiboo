@@ -1,6 +1,7 @@
 import os
 import csv
 import pandas as pd
+import requests
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -9,8 +10,8 @@ from django.core.paginator import Paginator
 from core.models import CryptoOHLCV, MarketSnapshot
 from core.utils.queryset_to_df import queryset_to_df
 from core.utils.timeframes import resample_timeframe
-from core.indicators.indicators import compute_indicators, build_signals_snapshot
 from core.utils.snapshot_builder import rebuild_market_snapshots
+
 from core.constants import (
     MIN_CANDLES,
     ALLOWED_TIMEFRAMES,
@@ -21,6 +22,9 @@ from core.constants import (
 )
 
 from app.pipes.pipe_binance import run_pipe_binance
+
+
+SIGNALS_URL = "http://127.0.0.1:8001/signals"
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -83,10 +87,11 @@ def run_pipeline(request):
 
     return render(request, "run_pipeline.html", {"message": message})
 
+
 def analyze(request):
     """
     Analyze list page with:
-    - sorting (A–Z / Z–A)
+    - sorting (ascending / descending)
     - signal filtering (BUY / HOLD / SELL)
     - search by symbol
     """
@@ -188,18 +193,40 @@ def symbol_detail(request, symbol):
         base_ctx["actual_candles"] = len(df)
         return render(request, "symbol_detail.html", base_ctx)
 
-    df = compute_indicators(df)
-    snapshot = build_signals_snapshot(df)
+    # CALL SIGNALS MICROSERVICE
+    df_send = df.tail(500).copy()
+
+    candles = []
+    for _, row in df_send.iterrows():
+        candles.append({
+            "date": row["date"].isoformat() if pd.notna(row["date"]) else None,
+            "open": float(row["open"]) if pd.notna(row.get("open")) else 0.0,
+            "high": float(row["high"]),
+            "low": float(row["low"]),
+            "close": float(row["close"]),
+            "volume": float(row["volume"]) if "volume" in df_send.columns and pd.notna(row.get("volume")) else None,
+        })
+
+    try:
+        resp = requests.post(
+            SIGNALS_URL,
+            json={"timeframe": timeframe, "candles": candles},
+            timeout=15
+        )
+        resp.raise_for_status()
+        snapshot = resp.json()
+    except Exception:
+        snapshot = {"overall": SIGNAL_NA, "latest": {}, "signals": {}, "values": {}}
 
     ctx = {
         **base_ctx,
         "has_enough_data": True,
         "min_required": min_required,
         "actual_candles": len(df),
-        "overall_signal": snapshot["overall"],
-        "latest": snapshot["latest"],
-        "signals": snapshot["signals"],
-        "values": snapshot["values"],
+        "overall_signal": snapshot.get("overall", SIGNAL_NA),
+        "latest": snapshot.get("latest", {}),
+        "signals": snapshot.get("signals", {}),
+        "values": snapshot.get("values", {}),
     }
 
     return render(request, "symbol_detail.html", ctx)
