@@ -7,7 +7,7 @@ from core.utils.queryset_to_df import queryset_to_df
 from core.utils.timeframes import resample_timeframe
 from core.constants import MIN_CANDLES, SIGNAL_NA
 
-SIGNALS_URL = "http://127.0.0.1:8001/signals"
+SIGNALS_URL = "http://127.0.0.1:8001/signals" 
 
 
 def compute_signal_for_timeframe(df: pd.DataFrame, timeframe: str) -> str:
